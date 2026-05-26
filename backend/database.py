@@ -9,9 +9,16 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./finrag.db")
 
 # For SQLite, we need check_same_thread: False to allow multi-threaded access in FastAPI
+# Database-specific connection arguments
 connect_args = {}
+
 if DATABASE_URL.startswith("sqlite"):
+    # SQLite local development
     connect_args = {"check_same_thread": False}
+
+elif DATABASE_URL.startswith("postgresql"):
+    # Render PostgreSQL requires SSL
+    connect_args = {"sslmode": "require"}
 
 # Create engine
 engine = create_engine(
