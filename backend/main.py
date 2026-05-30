@@ -3,14 +3,16 @@ import uuid
 from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import List, Optional
+from enum import Enum
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from database import get_db, init_db
 import models
+from embeddings import embedder, chroma_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -59,6 +61,86 @@ class TransactionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class SupportedEvents(str, Enum):
+    PAYMENT_FAILED = "payment.failed"
+    PAYMENT_CAPTURED = "payment.captured"
+    REFUND_CREATED = "refund.created"
+    DISPUTE_OPENED = "dispute.opened"
+
+class WebhookPayload(BaseModel):
+    event_type: SupportedEvents = Field(..., description="The type of the webhook event")
+    transaction_id: Optional[str] = Field(None, description="Unique transaction identifier. Auto-generated if missing.")
+    customer_id: str = Field(..., description="Unique customer identifier")
+    merchant: str = Field(..., description="Name of the merchant")
+    amount: float = Field(..., description="Transaction amount")
+    status: Optional[str] = Field(None, description="Current status of the transaction")
+
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("Amount must be greater than zero")
+        return v
+
+class EventResponse(BaseModel):
+    id: int
+    event_type: Optional[str] = None
+    transaction_id: str
+    customer_id: Optional[str] = None
+    merchant: Optional[str] = None
+    amount: float
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class WebhookProcessedResponse(BaseModel):
+    success: bool
+    message: str
+    data: EventResponse
+
+class SearchRequest(BaseModel):
+    query: str = Field(..., description="The query string to search semantically")
+    limit: Optional[int] = Field(5, description="Maximum number of results to return")
+
+class SearchResult(BaseModel):
+    transaction_id: str
+    summary: str
+    metadata: dict
+    distance: float
+
+class SearchResponse(BaseModel):
+    query: str
+    results: List[SearchResult]
+
+# --- Vector Search Ingestion Helper ---
+def index_transaction_in_chroma(transaction: models.Transaction):
+    """
+    Generates a natural language summary and vector embedding for a transaction
+    and saves it to ChromaDB with metadata.
+    """
+    try:
+        summary_text = embedder.generate_summary(transaction)
+        embedding = embedder.get_embedding(summary_text)
+        metadata = {
+            "transaction_id": transaction.transaction_id,
+            "event_type": transaction.event_type or "",
+            "customer_id": transaction.customer_id or "",
+            "merchant": transaction.merchant or "",
+            "amount": float(transaction.amount) if transaction.amount is not None else 0.0,
+            "status": transaction.status or "",
+            "created_at": transaction.created_at.isoformat() if transaction.created_at else ""
+        }
+        chroma_client.upsert_transaction_embedding(
+            transaction_id=transaction.transaction_id,
+            embedding=embedding,
+            document_text=summary_text,
+            metadata=metadata
+        )
+    except Exception as e:
+        print(f"Warning: Failed to index transaction in ChromaDB: {e}")
 
 # --- Endpoints ---
 
@@ -241,6 +323,10 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
     db.add(db_transaction)
     db.commit()
     db.refresh(db_transaction)
+    
+    # Automatically index transaction in ChromaDB
+    index_transaction_in_chroma(db_transaction)
+    
     return db_transaction
 
 @app.get("/api/transactions", response_model=List[TransactionResponse], tags=["Transactions"])
@@ -249,6 +335,125 @@ def list_transactions(db: Session = Depends(get_db)):
     List all transactions stored in the database.
     """
     return db.query(models.Transaction).all()
+
+
+@app.post("/webhook", response_model=WebhookProcessedResponse, status_code=status.HTTP_201_CREATED, tags=["Webhook"])
+def handle_webhook(payload: WebhookPayload, db: Session = Depends(get_db)):
+    """
+    Ingest a real-time financial webhook event and store the transaction record.
+    """
+    try:
+        # Determine transaction_id
+        txn_id = payload.transaction_id
+        if not txn_id:
+            txn_id = f"txn_{uuid.uuid4().hex[:12]}"
+        else:
+            # Check for uniqueness if provided
+            existing = db.query(models.Transaction).filter(models.Transaction.transaction_id == txn_id).first()
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Transaction with ID '{txn_id}' already exists."
+                )
+
+        # Fallback logic for status based on event type if not provided
+        status_mapping = {
+            SupportedEvents.PAYMENT_CAPTURED: "captured",
+            SupportedEvents.PAYMENT_FAILED: "failed",
+            SupportedEvents.REFUND_CREATED: "refunded",
+            SupportedEvents.DISPUTE_OPENED: "disputed"
+        }
+        final_status = payload.status or status_mapping.get(payload.event_type, "pending")
+
+        # Create new transaction record
+        db_transaction = models.Transaction(
+            event_type=payload.event_type.value,
+            transaction_id=txn_id,
+            customer_id=payload.customer_id,
+            merchant=payload.merchant,
+            amount=payload.amount,
+            status=final_status
+        )
+
+        db.add(db_transaction)
+        db.commit()
+        db.refresh(db_transaction)
+
+        # Automatically index transaction in ChromaDB
+        index_transaction_in_chroma(db_transaction)
+
+        return WebhookProcessedResponse(
+            success=True,
+            message=f"Webhook event '{payload.event_type.value}' ingested successfully.",
+            data=EventResponse.model_validate(db_transaction)
+        )
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while processing webhook: {str(e)}"
+        )
+
+
+@app.get("/events", response_model=List[EventResponse], tags=["Webhook"])
+def list_webhook_events(db: Session = Depends(get_db)):
+    """
+    Retrieve all stored webhook events and transactions, sorted by latest first.
+    """
+    try:
+        events = db.query(models.Transaction).order_by(models.Transaction.created_at.desc()).all()
+        return events
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while retrieving events: {str(e)}"
+        )
+
+
+@app.post("/search", response_model=SearchResponse, tags=["Search"])
+def semantic_search(payload: SearchRequest):
+    """
+    Perform a semantic search over financial transactions.
+    """
+    try:
+        # Compute embedding of the query string
+        query_vector = embedder.get_embedding(payload.query)
+        
+        # Query ChromaDB
+        chroma_results = chroma_client.search_similar_events(
+            query_embedding=query_vector,
+            limit=payload.limit
+        )
+        
+        search_results = []
+        
+        ids = chroma_results.get("ids", [[]])[0]
+        documents = chroma_results.get("documents", [[]])[0]
+        metadatas = chroma_results.get("metadatas", [[]])[0]
+        distances = chroma_results.get("distances", [[]])[0]
+        
+        for idx in range(len(ids)):
+            search_results.append(
+                SearchResult(
+                    transaction_id=ids[idx],
+                    summary=documents[idx],
+                    metadata=metadatas[idx] if metadatas[idx] is not None else {},
+                    distance=distances[idx]
+                )
+            )
+            
+        return SearchResponse(
+            query=payload.query,
+            results=search_results
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Semantic search failed: {str(e)}"
+        )
 
 
 if __name__ == "__main__":

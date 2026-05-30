@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden relative">
@@ -7,7 +9,7 @@ export default function Home() {
       <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Navigation */}
-      <nav className="relative z-10 flex items-center justify-between px-8 py-5 border-b border-white/5">
+      <nav className="relative z-10 flex items-center justify-between px-8 py-5 border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-md sticky top-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-sm font-bold shadow-lg shadow-violet-500/20">
             F
@@ -15,14 +17,14 @@ export default function Home() {
           <span className="text-lg font-semibold tracking-tight">FinRAG</span>
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm text-white/50">
-          <a href="#" className="hover:text-white transition-colors">Dashboard</a>
+          <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
           <a href="#" className="hover:text-white transition-colors">Documents</a>
           <a href="#" className="hover:text-white transition-colors">Chat</a>
           <a href="#" className="hover:text-white transition-colors">Analytics</a>
         </div>
-        <button className="text-sm px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+        <Link href="/dashboard" className="text-sm px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
           Get Started
-        </button>
+        </Link>
       </nav>
 
       {/* Hero Section */}
