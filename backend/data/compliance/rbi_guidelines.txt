@@ -1,0 +1,8 @@
+RBI Guideline 1:
+Repeated failed payment attempts may indicate fraud.
+
+RBI Guideline 2:
+Suspicious transactions should be monitored and logged.
+
+RBI Guideline 3:
+Dispute records should be retained for auditing.

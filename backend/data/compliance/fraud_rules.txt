@@ -1,0 +1,8 @@
+Rule 1:
+More than 3 failed transactions in 5 minutes may indicate fraud.
+
+Rule 2:
+Multiple disputes from same customer increase risk score.
+
+Rule 3:
+Large refund requests should be reviewed.

@@ -1,0 +1,8 @@
+PCI-DSS Rule 1:
+Cardholder data must be protected.
+
+PCI-DSS Rule 2:
+CVV must never be stored after authorization.
+
+PCI-DSS Rule 3:
+Access to payment information must be restricted.
