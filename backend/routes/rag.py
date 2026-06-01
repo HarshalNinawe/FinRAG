@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from services.rag_service import process_rag_query
+from services.rag_service import ask_rag
 
 router = APIRouter(
     prefix="/rag",
@@ -11,8 +11,7 @@ router = APIRouter(
 class RAGRequest(BaseModel):
     query: str
 
-
 @router.post("/search")
 def rag_search(request: RAGRequest):
 
-   return process_rag_query(request.query)
+   return ask_rag(request.query)
