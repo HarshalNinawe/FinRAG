@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
+from routes.rag import router as rag_router
 
 from database import get_db, init_db
 import models
@@ -26,6 +27,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+app.include_router(rag_router)
 
 # CORS middleware to allow connection from standard frontend developments (React, Vue, Svelte, etc.)
 app.add_middleware(
