@@ -7,7 +7,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
-from embeddings import embedder, chroma_client
+# from embeddings import embedder, chroma_client
 
 
 def retrieve_context(query: str, top_k: int = 5) -> Dict:
@@ -15,6 +15,7 @@ def retrieve_context(query: str, top_k: int = 5) -> Dict:
     Search both transaction and compliance collections
     and return combined retrieval results.
     """
+    from embeddings import embedder, chroma_client
 
     try:
         # Generate query embedding
