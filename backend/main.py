@@ -14,7 +14,7 @@ from routes.chat import router as chat_router
 
 from database import get_db, init_db
 import models
-from embeddings import embedder, chroma_client
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -119,16 +119,22 @@ class SearchResult(BaseModel):
 class SearchResponse(BaseModel):
     query: str
     results: List[SearchResult]
-
 # --- Vector Search Ingestion Helper ---
+
 def index_transaction_in_chroma(transaction: models.Transaction):
     """
     Generates a natural language summary and vector embedding for a transaction
     and saves it to ChromaDB with metadata.
     """
+
+    # Lazy import to avoid loading SentenceTransformer during app startup
+    from embeddings import embedder, chroma_client
+
     try:
         summary_text = embedder.generate_summary(transaction)
+
         embedding = embedder.get_embedding(summary_text)
+
         metadata = {
             "transaction_id": transaction.transaction_id,
             "event_type": transaction.event_type or "",
@@ -136,17 +142,21 @@ def index_transaction_in_chroma(transaction: models.Transaction):
             "merchant": transaction.merchant or "",
             "amount": float(transaction.amount) if transaction.amount is not None else 0.0,
             "status": transaction.status or "",
-            "created_at": transaction.created_at.isoformat() if transaction.created_at else ""
+            "created_at": transaction.created_at.isoformat()
+            if transaction.created_at else ""
         }
+
         chroma_client.upsert_transaction_embedding(
             transaction_id=transaction.transaction_id,
             embedding=embedding,
             document_text=summary_text,
             metadata=metadata
         )
+
     except Exception as e:
         print(f"Warning: Failed to index transaction in ChromaDB: {e}")
 
+    
 # --- Endpoints ---
 
 @app.get("/", tags=["System"])
