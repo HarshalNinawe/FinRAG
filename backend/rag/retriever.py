@@ -2,6 +2,7 @@ import os
 import sys
 from typing import Dict, List
 
+
 # Ensure backend root is available
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
@@ -88,7 +89,7 @@ def retrieve_context(query: str, top_k: int = 5) -> Dict:
                     "score": distances[i] if i < len(distances) else None
                 })
         
-        fraud_alerts = db.query(models.FraudAlert).all()
+        # fraud_alerts = db.query(models.FraudAlert).all()
 
         return {
             "query": query,
