@@ -89,7 +89,7 @@ def retrieve_context(query: str, top_k: int = 5) -> Dict:
                     "score": distances[i] if i < len(distances) else None
                 })
         
-        # fraud_alerts = db.query(models.FraudAlert).all()
+        fraud_alerts = db.query(models.FraudAlert).all()
 
         return {
             "query": query,
