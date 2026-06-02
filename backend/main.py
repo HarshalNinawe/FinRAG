@@ -14,7 +14,7 @@ from routes.chat import router as chat_router
 
 from database import get_db, init_db
 import models
-
+from fraud_detection.detector import calculate_risk_score
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -96,6 +96,16 @@ class EventResponse(BaseModel):
     merchant: Optional[str] = None
     amount: float
     status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class FraudAlertResponse(BaseModel):
+    id: int
+    transaction_id: str
+    risk_score: int
+    reason: str
     created_at: datetime
 
     class Config:
@@ -394,6 +404,19 @@ def handle_webhook(payload: WebhookPayload, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_transaction)
 
+        fraud_result = calculate_risk_score(db_transaction)
+
+        if fraud_result["risk_score"] >= 50:
+
+            alert = models.FraudAlert(
+                transaction_id=db_transaction.transaction_id,
+                risk_score=fraud_result["risk_score"],
+                reason=", ".join(fraud_result["reasons"])
+            )
+
+            db.add(alert)
+            db.commit()
+
         # Automatically index transaction in ChromaDB
         index_transaction_in_chroma(db_transaction)
 
@@ -427,6 +450,29 @@ def list_webhook_events(db: Session = Depends(get_db)):
             detail=f"An error occurred while retrieving events: {str(e)}"
         )
 
+@app.get(
+    "/fraud-alerts",
+    response_model=List[FraudAlertResponse],
+    tags=["Fraud"]
+)
+def get_fraud_alerts(db: Session = Depends(get_db)):
+    """
+    Retrieve all fraud alerts sorted by newest first.
+    """
+    try:
+        alerts = (
+            db.query(models.FraudAlert)
+            .order_by(models.FraudAlert.created_at.desc())
+            .all()
+        )
+
+        return alerts
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve fraud alerts: {str(e)}"
+        )
 
 @app.post("/search", response_model=SearchResponse, tags=["Search"])
 def semantic_search(payload: SearchRequest):

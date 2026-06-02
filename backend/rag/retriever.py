@@ -87,11 +87,14 @@ def retrieve_context(query: str, top_k: int = 5) -> Dict:
                     "metadata": metadatas[i] if i < len(metadatas) else {},
                     "score": distances[i] if i < len(distances) else None
                 })
+        
+        fraud_alerts = db.query(models.FraudAlert).all()
 
         return {
             "query": query,
             "transactions": transactions,
             "compliance_rules": compliance_rules
+            "fraud_alerts": fraud_alerts
         }
 
     except Exception as e:

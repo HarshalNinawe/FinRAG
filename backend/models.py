@@ -46,6 +46,22 @@ class ChatMessage(Base):
 
     session: Mapped["ChatSession"] = relationship(back_populates="messages")
 
+class FraudAlert(Base):
+    __tablename__ = "fraud_alerts"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+
+    transaction_id: Mapped[str] = mapped_column(String(100))
+
+    risk_score: Mapped[int] = mapped_column()
+
+    reason: Mapped[str] = mapped_column(Text)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
 class Transaction(Base):
     __tablename__ = "transactions"
 
@@ -57,5 +73,4 @@ class Transaction(Base):
     status: Mapped[str] = mapped_column(String(50), default="pending")
     amount: Mapped[float] = mapped_column()
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-
 
