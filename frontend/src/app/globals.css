@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0f;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -12,15 +12,52 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* ─── Custom Scrollbar ─────────────────────────────────────────────────────── */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.25) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(139, 92, 246, 0.25);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(139, 92, 246, 0.45);
+}
+
+/* ─── Chat Textarea ────────────────────────────────────────────────────────── */
+
+textarea {
+  field-sizing: content;
+}
+
+/* ─── Smooth scroll ────────────────────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ─── Selection color ──────────────────────────────────────────────────────── */
+
+::selection {
+  background-color: rgba(139, 92, 246, 0.35);
+  color: #fff;
 }
