@@ -65,7 +65,8 @@ def init_db():
         new_columns = {
             "event_type": "VARCHAR(50)",
             "customer_id": "VARCHAR(100)",
-            "merchant": "VARCHAR(100)"
+            "merchant": "VARCHAR(100)",
+            "source": "VARCHAR(50)"
         }
         
         with engine.begin() as conn:
