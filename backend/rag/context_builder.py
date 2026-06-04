@@ -1,12 +1,15 @@
 from rag.retriever import retrieve_context
 
 
-def build_context(query: str, top_k: int = 5) -> str:
+def build_context(query: str, results: dict = None, top_k: int = 5) -> str:
     """
     Build structured RAG context from retrieval results.
     """
 
-    results = retrieve_context(query, top_k)
+    if results is None or not isinstance(results, dict):
+        if isinstance(results, int):
+            top_k = results
+        results = retrieve_context(query, top_k)
 
     context_parts = []
 
@@ -31,6 +34,26 @@ def build_context(query: str, top_k: int = 5) -> str:
             )
     else:
         context_parts.append("No relevant compliance rules found.")
+
+    # NEW SECTION
+    context_parts.append("\n=== Fraud Alerts ===")
+
+    if results["fraud_alerts"]:
+        for idx, alert in enumerate(
+            results["fraud_alerts"],
+            start=1
+        ):
+            context_parts.append(
+                f"{idx}. "
+                f"Transaction ID: {alert['transaction_id']} | "
+                f"Risk Score: {alert['risk_score']} | "
+                f"Reason: {alert['reason']}"
+            )
+    else:
+        context_parts.append(
+            "No fraud alerts found."
+        )
+
 
     return "\n".join(context_parts)
 

@@ -89,13 +89,31 @@ def retrieve_context(query: str, top_k: int = 5) -> Dict:
                     "score": distances[i] if i < len(distances) else None
                 })
         
-        fraud_alerts = db.query(models.FraudAlert).all()
+        from database import SessionLocal
+        import models
+
+        db = SessionLocal()
+        try:
+            fraud_alerts = db.query(models.FraudAlert).all()
+            # Convert alerts to a list of dicts to avoid sqlalchemy session issues
+            fraud_alerts_list = [
+                {
+                    "id": alert.id,
+                    "transaction_id": alert.transaction_id,
+                    "risk_score": alert.risk_score,
+                    "reason": alert.reason,
+                    "created_at": alert.created_at.isoformat() if alert.created_at else None
+                }
+                for alert in fraud_alerts
+            ]
+        finally:
+            db.close()
 
         return {
             "query": query,
             "transactions": transactions,
-            "compliance_rules": compliance_rules
-            "fraud_alerts": fraud_alerts
+            "compliance_rules": compliance_rules,
+            "fraud_alerts": fraud_alerts_list
         }
 
     except Exception as e:
@@ -105,6 +123,7 @@ def retrieve_context(query: str, top_k: int = 5) -> Dict:
             "query": query,
             "transactions": [],
             "compliance_rules": [],
+            "fraud_alerts": [],
             "error": str(e)
         }
 

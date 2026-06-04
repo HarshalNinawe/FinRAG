@@ -14,11 +14,23 @@ genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel("gemini-2.5-flash")
 
 
+from google.api_core.exceptions import ResourceExhausted
+
 def generate_answer(prompt: str) -> str:
-    """
-    Send prompt to Gemini and return text response.
-    """
 
-    response = model.generate_content(prompt)
+    try:
+        response = model.generate_content(prompt)
+        return response.text
 
-    return response.text
+    except ResourceExhausted:
+        return """
+Gemini API quota exceeded.
+
+The retrieval pipeline completed successfully,
+but answer generation is temporarily unavailable.
+
+Please try again later.
+"""
+
+    except Exception as e:
+        return f"LLM Error: {str(e)}"

@@ -66,11 +66,42 @@ class Transaction(Base):
     __tablename__ = "transactions"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    event_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    transaction_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
-    customer_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    merchant: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    status: Mapped[str] = mapped_column(String(50), default="pending")
-    amount: Mapped[float] = mapped_column()
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
+    event_type: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        nullable=True
+    )
+
+    transaction_id: Mapped[str] = mapped_column(
+        String(100),
+        unique=True,
+        index=True
+    )
+
+    customer_id: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True
+    )
+
+    merchant: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True
+    )
+
+    source: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        nullable=True,
+        default="system"
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(50),
+        default="pending"
+    )
+
+    amount: Mapped[float] = mapped_column()
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow
+    )

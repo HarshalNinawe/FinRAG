@@ -11,10 +11,11 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 from routes.rag import router as rag_router
 from routes.chat import router as chat_router
+from routes.payments import router as payment_router
 
 from database import get_db, init_db
 import models
-from fraud_detection.detector import calculate_risk_score
+from services.transaction_service import process_transaction_event
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,11 +32,16 @@ app = FastAPI(
 
 app.include_router(rag_router)
 app.include_router(chat_router)
+app.include_router(payment_router)
 
 # CORS middleware to allow connection from standard frontend developments (React, Vue, Svelte, etc.)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust in production environments
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+  # Adjust in production environments
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -131,40 +137,7 @@ class SearchResponse(BaseModel):
     results: List[SearchResult]
 # --- Vector Search Ingestion Helper ---
 
-def index_transaction_in_chroma(transaction: models.Transaction):
-    """
-    Generates a natural language summary and vector embedding for a transaction
-    and saves it to ChromaDB with metadata.
-    """
-
-    # Lazy import to avoid loading SentenceTransformer during app startup
-    from embeddings import embedder, chroma_client
-
-    try:
-        summary_text = embedder.generate_summary(transaction)
-
-        embedding = embedder.get_embedding(summary_text)
-
-        metadata = {
-            "transaction_id": transaction.transaction_id,
-            "event_type": transaction.event_type or "",
-            "customer_id": transaction.customer_id or "",
-            "merchant": transaction.merchant or "",
-            "amount": float(transaction.amount) if transaction.amount is not None else 0.0,
-            "status": transaction.status or "",
-            "created_at": transaction.created_at.isoformat()
-            if transaction.created_at else ""
-        }
-
-        chroma_client.upsert_transaction_embedding(
-            transaction_id=transaction.transaction_id,
-            embedding=embedding,
-            document_text=summary_text,
-            metadata=metadata
-        )
-
-    except Exception as e:
-        print(f"Warning: Failed to index transaction in ChromaDB: {e}")
+# Ingestion and indexing are handled in services/transaction_service.py
 
     
 # --- Endpoints ---
@@ -332,26 +305,15 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
     """
     Create a new financial transaction in the database.
     """
-    # Check if transaction_id is unique
-    existing = db.query(models.Transaction).filter(models.Transaction.transaction_id == payload.transaction_id).first()
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Transaction with this ID already exists"
-        )
-    
-    db_transaction = models.Transaction(
+    db_transaction = process_transaction_event(
+        db=db,
+        event_type=None,
         transaction_id=payload.transaction_id,
+        customer_id=None,
+        merchant=None,
         amount=payload.amount,
-        status=payload.status
+        status_str=payload.status
     )
-    db.add(db_transaction)
-    db.commit()
-    db.refresh(db_transaction)
-    
-    # Automatically index transaction in ChromaDB
-    index_transaction_in_chroma(db_transaction)
-    
     return db_transaction
 
 @app.get("/api/transactions", response_model=List[TransactionResponse], tags=["Transactions"])
@@ -368,19 +330,6 @@ def handle_webhook(payload: WebhookPayload, db: Session = Depends(get_db)):
     Ingest a real-time financial webhook event and store the transaction record.
     """
     try:
-        # Determine transaction_id
-        txn_id = payload.transaction_id
-        if not txn_id:
-            txn_id = f"txn_{uuid.uuid4().hex[:12]}"
-        else:
-            # Check for uniqueness if provided
-            existing = db.query(models.Transaction).filter(models.Transaction.transaction_id == txn_id).first()
-            if existing:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Transaction with ID '{txn_id}' already exists."
-                )
-
         # Fallback logic for status based on event type if not provided
         status_mapping = {
             SupportedEvents.PAYMENT_CAPTURED: "captured",
@@ -390,35 +339,15 @@ def handle_webhook(payload: WebhookPayload, db: Session = Depends(get_db)):
         }
         final_status = payload.status or status_mapping.get(payload.event_type, "pending")
 
-        # Create new transaction record
-        db_transaction = models.Transaction(
+        db_transaction = process_transaction_event(
+            db=db,
             event_type=payload.event_type.value,
-            transaction_id=txn_id,
+            transaction_id=payload.transaction_id,
             customer_id=payload.customer_id,
             merchant=payload.merchant,
             amount=payload.amount,
-            status=final_status
+            status_str=final_status
         )
-
-        db.add(db_transaction)
-        db.commit()
-        db.refresh(db_transaction)
-
-        fraud_result = calculate_risk_score(db_transaction)
-
-        if fraud_result["risk_score"] >= 50:
-
-            alert = models.FraudAlert(
-                transaction_id=db_transaction.transaction_id,
-                risk_score=fraud_result["risk_score"],
-                reason=", ".join(fraud_result["reasons"])
-            )
-
-            db.add(alert)
-            db.commit()
-
-        # Automatically index transaction in ChromaDB
-        index_transaction_in_chroma(db_transaction)
 
         return WebhookProcessedResponse(
             success=True,
@@ -426,10 +355,8 @@ def handle_webhook(payload: WebhookPayload, db: Session = Depends(get_db)):
             data=EventResponse.model_validate(db_transaction)
         )
     except HTTPException as he:
-        db.rollback()
         raise he
     except Exception as e:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred while processing webhook: {str(e)}"
@@ -479,6 +406,9 @@ def semantic_search(payload: SearchRequest):
     """
     Perform a semantic search over financial transactions.
     """
+    # Lazy import to avoid loading SentenceTransformer during app startup
+    from embeddings import embedder, chroma_client
+
     try:
         # Compute embedding of the query string
         query_vector = embedder.get_embedding(payload.query)
