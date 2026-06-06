@@ -3,6 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { eventService, FinancialEvent } from "@/lib/event-service";
 
+interface TransactionSearchProps {
+  /** Increment to trigger an immediate out-of-cycle data refresh. */
+  refreshTrigger?: number;
+}
+
 function StatusDot({ status }: { status: string }) {
   const s = status.toLowerCase();
   const color =
@@ -19,7 +24,7 @@ function StatusDot({ status }: { status: string }) {
   return <span className={`inline-block w-1.5 h-1.5 rounded-full ${color} shrink-0`} />;
 }
 
-export default function TransactionSearch() {
+export default function TransactionSearch({ refreshTrigger }: TransactionSearchProps) {
   const [allEvents, setAllEvents] = useState<FinancialEvent[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -40,6 +45,21 @@ export default function TransactionSearch() {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  // Instant refresh via custom window event (fired by PaymentPanel on success)
+  useEffect(() => {
+    const handler = () => fetchAll();
+    window.addEventListener("dashboardRefresh", handler);
+    return () => window.removeEventListener("dashboardRefresh", handler);
+  }, [fetchAll]);
+
+  // Also react to prop-based refreshTrigger
+  useEffect(() => {
+    if (typeof refreshTrigger === "number" && refreshTrigger > 0) {
+      fetchAll();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTrigger]);
 
   // Client-side filtering across transaction_id, customer_id, merchant, status
   const filtered = query.trim()

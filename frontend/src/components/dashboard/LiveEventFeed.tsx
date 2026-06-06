@@ -5,6 +5,11 @@ import { eventService, FinancialEvent } from "@/lib/event-service";
 
 const POLL_INTERVAL_MS = 5000;
 
+interface LiveEventFeedProps {
+  /** Increment to trigger an immediate out-of-cycle refresh. */
+  refreshTrigger?: number;
+}
+
 function EventTypeBadge({ type }: { type: string | null }) {
   switch (type) {
     case "payment.captured":
@@ -53,7 +58,7 @@ function formatTime(dateStr: string) {
   }
 }
 
-export default function LiveEventFeed() {
+export default function LiveEventFeed({ refreshTrigger }: LiveEventFeedProps) {
   const [events, setEvents] = useState<FinancialEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,11 +84,27 @@ export default function LiveEventFeed() {
     }
   }, []);
 
+  // Regular polling — interval is never recreated by refreshTrigger
   useEffect(() => {
     fetchEvents();
     const id = setInterval(() => fetchEvents(true), POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [fetchEvents]);
+
+  // Instant refresh via custom window event
+  useEffect(() => {
+    const handler = () => fetchEvents(true);
+    window.addEventListener("dashboardRefresh", handler);
+    return () => window.removeEventListener("dashboardRefresh", handler);
+  }, [fetchEvents]);
+
+  // Also react to prop-based refreshTrigger
+  useEffect(() => {
+    if (typeof refreshTrigger === "number" && refreshTrigger > 0) {
+      fetchEvents(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTrigger]);
 
   return (
     <div className="flex flex-col h-full rounded-xl bg-white/[0.03] border border-white/8 overflow-hidden">

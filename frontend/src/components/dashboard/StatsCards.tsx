@@ -3,7 +3,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { eventService, FinancialEvent } from "@/lib/event-service";
 
-export default function StatsCards() {
+interface StatsCardsProps {
+  /** Increment this value to trigger an immediate refresh outside the poll cycle. */
+  refreshTrigger?: number;
+}
+
+export default function StatsCards({ refreshTrigger }: StatsCardsProps) {
   const [events, setEvents] = useState<FinancialEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,11 +23,27 @@ export default function StatsCards() {
     }
   }, []);
 
+  // Regular polling — interval is never recreated by refreshTrigger
   useEffect(() => {
     fetchEvents();
     const id = setInterval(fetchEvents, 10000); // refresh every 10s
     return () => clearInterval(id);
   }, [fetchEvents]);
+
+  // Instant refresh via custom window event (fired by PaymentPanel on success)
+  useEffect(() => {
+    const handler = () => fetchEvents();
+    window.addEventListener("dashboardRefresh", handler);
+    return () => window.removeEventListener("dashboardRefresh", handler);
+  }, [fetchEvents]);
+
+  // Also react to prop-based refreshTrigger (increments from parent)
+  useEffect(() => {
+    if (typeof refreshTrigger === "number" && refreshTrigger > 0) {
+      fetchEvents();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTrigger]);
 
   const totalEvents = events.length;
   const failedPayments = events.filter((e) => e.event_type === "payment.failed" || e.status === "failed" || e.status === "declined").length;

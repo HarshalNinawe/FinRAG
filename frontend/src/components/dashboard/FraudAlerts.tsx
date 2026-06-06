@@ -3,6 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { fraudService, FraudAlert } from "@/lib/fraud-service";
 
+interface FraudAlertsProps {
+  /** Increment to trigger an immediate out-of-cycle refresh. */
+  refreshTrigger?: number;
+}
+
 function RiskBadge({ score }: { score: number }) {
   if (score > 80) {
     return (
@@ -49,7 +54,7 @@ function formatTime(dateStr: string) {
   }
 }
 
-export default function FraudAlerts() {
+export default function FraudAlerts({ refreshTrigger }: FraudAlertsProps) {
   const [alerts, setAlerts] = useState<FraudAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,11 +72,27 @@ export default function FraudAlerts() {
     }
   }, []);
 
+  // Regular polling — interval is never recreated by refreshTrigger
   useEffect(() => {
     fetchAlerts();
     const id = setInterval(fetchAlerts, 10000);
     return () => clearInterval(id);
   }, [fetchAlerts]);
+
+  // Instant refresh via custom window event
+  useEffect(() => {
+    const handler = () => fetchAlerts();
+    window.addEventListener("dashboardRefresh", handler);
+    return () => window.removeEventListener("dashboardRefresh", handler);
+  }, [fetchAlerts]);
+
+  // Also react to prop-based refreshTrigger
+  useEffect(() => {
+    if (typeof refreshTrigger === "number" && refreshTrigger > 0) {
+      fetchAlerts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTrigger]);
 
   return (
     <div className="flex flex-col h-full rounded-xl bg-white/[0.03] border border-white/8 overflow-hidden">
