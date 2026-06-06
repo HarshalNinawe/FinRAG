@@ -11,15 +11,23 @@ if not API_KEY:
 
 genai.configure(api_key=API_KEY)
 
-model = genai.GenerativeModel("gemini-2.5-flash")
+_model = None
 
+
+def get_model():
+    global _model
+
+    if _model is None:
+        _model = genai.GenerativeModel("gemini-2.5-flash")
+
+    return _model
 
 from google.api_core.exceptions import ResourceExhausted
 
 def generate_answer(prompt: str) -> str:
 
     try:
-        response = model.generate_content(prompt)
+        response = get_model().generate_content(prompt)
         return response.text
 
     except ResourceExhausted:

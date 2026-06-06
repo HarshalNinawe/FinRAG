@@ -2,6 +2,38 @@ import os
 import sys
 from typing import Dict, List
 
+_transactions_collection = None
+_compliance_collection = None
+
+
+def get_transactions_collection():
+    global _transactions_collection
+
+    if _transactions_collection is None:
+        from embeddings import chroma_client
+
+        _transactions_collection = (
+            chroma_client.client.get_or_create_collection(
+                name="transactions"
+            )
+        )
+
+    return _transactions_collection
+
+
+def get_compliance_collection():
+    global _compliance_collection
+
+    if _compliance_collection is None:
+        from embeddings import chroma_client
+
+        _compliance_collection = (
+            chroma_client.client.get_or_create_collection(
+                name="compliance_docs"
+            )
+        )
+
+    return _compliance_collection
 
 # Ensure backend root is available
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,17 +55,8 @@ def retrieve_context(query: str, top_k: int = 5) -> Dict:
         query_embedding = embedder.get_embedding(query)
 
         # Get collections
-        transactions_collection = (
-            chroma_client.client.get_or_create_collection(
-                name="transactions"
-            )
-        )
-
-        compliance_collection = (
-            chroma_client.client.get_or_create_collection(
-                name="compliance_docs"
-            )
-        )
+        transactions_collection = get_transactions_collection()
+        compliance_collection = get_compliance_collection()
 
         # Search transaction collection
         transaction_results = transactions_collection.query(
@@ -94,8 +117,13 @@ def retrieve_context(query: str, top_k: int = 5) -> Dict:
 
         db = SessionLocal()
         try:
-            fraud_alerts = db.query(models.FraudAlert).all()
-            # Convert alerts to a list of dicts to avoid sqlalchemy session issues
+            fraud_alerts = (
+                db.query(models.FraudAlert)
+                .order_by(models.FraudAlert.created_at.desc())
+                .limit(20)
+                .all()
+            )
+            
             fraud_alerts_list = [
                 {
                     "id": alert.id,

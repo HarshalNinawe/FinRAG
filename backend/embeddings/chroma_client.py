@@ -9,14 +9,22 @@ CHROMA_DB_DIR = os.path.abspath(CHROMA_DB_DIR)
 
 print(f"Initializing ChromaDB client at: {CHROMA_DB_DIR}")
 
-# Initialize ChromaDB persistent client
-client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+_client = None
+_collection = None
 
-# Get or create the collection named "transactions"
-collection = client.get_or_create_collection(
-    name="transactions",
-    metadata={"hnsw:space": "cosine"}
-)
+def get_collection():
+    global _client, _collection
+
+    if _client is None:
+        _client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+
+    if _collection is None:
+        _collection = _client.get_or_create_collection(
+            name="transactions",
+            metadata={"hnsw:space": "cosine"}
+        )
+
+    return _collection
 
 def upsert_transaction_embedding(transaction_id: str, embedding: List[float], document_text: str, metadata: Dict[str, Any]):
     """
@@ -32,7 +40,7 @@ def upsert_transaction_embedding(transaction_id: str, embedding: List[float], do
         else:
             cleaned_metadata[k] = str(v)
             
-    collection.upsert(
+    get_collection().upsert(
         ids=[transaction_id],
         embeddings=[embedding],
         documents=[document_text],
@@ -44,7 +52,7 @@ def search_similar_events(query_embedding: List[float], limit: int = 5) -> Dict[
     """
     Queries ChromaDB for the closest transactions given a query embedding.
     """
-    results = collection.query(
+    results = get_collection.query(
         query_embeddings=[query_embedding],
         n_results=limit
     )
