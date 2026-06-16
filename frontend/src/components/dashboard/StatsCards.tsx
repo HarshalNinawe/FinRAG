@@ -54,7 +54,7 @@ export default function StatsCards({ refreshTrigger }: StatsCardsProps) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="rounded-xl bg-white/[0.02] border border-white/5 p-4 animate-pulse h-24" />
+          <div key={i} className="rounded-xl bg-gray-50 border border-gray-200 p-4 animate-pulse h-24" />
         ))}
       </div>
     );
@@ -63,35 +63,35 @@ export default function StatsCards({ refreshTrigger }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {/* Total Events */}
-      <div className="rounded-xl bg-white/[0.03] border border-white/8 p-4 flex flex-col justify-center">
-        <span className="text-[10px] uppercase tracking-wider text-white/40 font-semibold mb-1">
+      <div className="rounded-xl bg-white border border-gray-200 p-4 flex flex-col justify-center shadow-sm">
+        <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1">
           Total Events
         </span>
-        <span className="text-2xl font-bold text-white">{totalEvents}</span>
+        <span className="text-2xl font-bold text-black">{totalEvents}</span>
       </div>
 
       {/* Failed Payments */}
-      <div className="rounded-xl bg-rose-500/5 border border-rose-500/10 p-4 flex flex-col justify-center">
-        <span className="text-[10px] uppercase tracking-wider text-rose-400/70 font-semibold mb-1">
+      <div className="rounded-xl bg-white border border-gray-200 p-4 flex flex-col justify-center shadow-sm">
+        <span className="text-[10px] uppercase tracking-wider text-red-500 font-semibold mb-1">
           Failed Payments
         </span>
-        <span className="text-2xl font-bold text-rose-400">{failedPayments}</span>
+        <span className="text-2xl font-bold text-black">{failedPayments}</span>
       </div>
 
       {/* Disputes */}
-      <div className="rounded-xl bg-violet-500/5 border border-violet-500/10 p-4 flex flex-col justify-center">
-        <span className="text-[10px] uppercase tracking-wider text-violet-400/70 font-semibold mb-1">
+      <div className="rounded-xl bg-white border border-gray-200 p-4 flex flex-col justify-center shadow-sm">
+        <span className="text-[10px] uppercase tracking-wider text-purple-600 font-semibold mb-1">
           Disputes
         </span>
-        <span className="text-2xl font-bold text-violet-400">{disputes}</span>
+        <span className="text-2xl font-bold text-black">{disputes}</span>
       </div>
 
       {/* Refunds */}
-      <div className="rounded-xl bg-amber-500/5 border border-amber-500/10 p-4 flex flex-col justify-center">
-        <span className="text-[10px] uppercase tracking-wider text-amber-400/70 font-semibold mb-1">
+      <div className="rounded-xl bg-white border border-gray-200 p-4 flex flex-col justify-center shadow-sm">
+        <span className="text-[10px] uppercase tracking-wider text-orange-500 font-semibold mb-1">
           Refunds
         </span>
-        <span className="text-2xl font-bold text-amber-400">{refunds}</span>
+        <span className="text-2xl font-bold text-black">{refunds}</span>
       </div>
     </div>
   );

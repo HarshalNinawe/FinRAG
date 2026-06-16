@@ -80,15 +80,15 @@ export default function ChatPanel() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex flex-col rounded-xl bg-white/[0.03] border border-white/8 overflow-hidden h-full">
+    <div className="flex flex-col rounded-xl bg-white border border-gray-200 overflow-hidden h-full shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/6 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-md bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold">
+          <div className="w-5 h-5 rounded-md bg-black text-white flex items-center justify-center text-[10px] font-bold">
             F
           </div>
-          <span className="text-xs font-semibold text-white/70">AI Chat Assistant</span>
-          <span className="px-1.5 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-[9px] font-semibold uppercase tracking-wider">
+          <span className="text-xs font-semibold text-gray-800">AI Chat Assistant</span>
+          <span className="px-1.5 py-0.5 rounded-full bg-gray-100 border border-gray-200 text-gray-600 text-[9px] font-semibold uppercase tracking-wider">
             Gemini
           </span>
         </div>
@@ -96,7 +96,7 @@ export default function ChatPanel() {
           <button
             id="chat-panel-clear"
             onClick={() => setMessages([])}
-            className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
+            className="text-[10px] text-gray-500 hover:text-gray-800 transition-colors"
           >
             Clear
           </button>
@@ -107,14 +107,14 @@ export default function ChatPanel() {
       <div className="flex-1 overflow-y-auto min-h-0 py-2">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4 text-center gap-3 py-6">
-            <p className="text-xs text-white/30">Ask about your financial data</p>
+            <p className="text-xs text-gray-500">Ask about your financial data</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {STARTER_PROMPTS.map((p) => (
                 <button
                   key={p}
                   onClick={() => handleSend(p)}
                   disabled={isLoading}
-                  className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/8 hover:border-violet-500/30 text-[11px] text-white/50 hover:text-white/80 transition-all disabled:opacity-40 text-left"
+                  className="px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 text-[11px] text-gray-600 hover:text-black transition-all disabled:opacity-40 text-left"
                 >
                   {p}
                 </button>
@@ -133,14 +133,14 @@ export default function ChatPanel() {
       </div>
 
       {/* Input */}
-      <div className="px-3 pb-3 pt-2 border-t border-white/6 shrink-0">
+      <div className="px-3 pb-3 pt-2 border-t border-gray-200 shrink-0 bg-gray-50">
         <ChatInput
           value={inputValue}
           onChange={setInputValue}
           onSend={() => handleSend()}
           isLoading={isLoading}
         />
-        <p className="text-[9px] text-white/20 text-center mt-1.5">
+        <p className="text-[9px] text-gray-400 text-center mt-1.5">
           Powered by Gemini · POST /chat
         </p>
       </div>

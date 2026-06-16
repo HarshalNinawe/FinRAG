@@ -12,14 +12,17 @@ print(f"Initializing ChromaDB client at: {CHROMA_DB_DIR}")
 _client = None
 _collection = None
 
-def get_collection():
-    global _client, _collection
-
+def get_client():
+    global _client
     if _client is None:
         _client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+    return _client
+
+def get_collection():
+    global _collection
 
     if _collection is None:
-        _collection = _client.get_or_create_collection(
+        _collection = get_client().get_or_create_collection(
             name="transactions",
             metadata={"hnsw:space": "cosine"}
         )
@@ -52,7 +55,7 @@ def search_similar_events(query_embedding: List[float], limit: int = 5) -> Dict[
     """
     Queries ChromaDB for the closest transactions given a query embedding.
     """
-    results = get_collection.query(
+    results = get_collection().query(
         query_embeddings=[query_embedding],
         n_results=limit
     )

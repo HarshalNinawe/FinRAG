@@ -13,7 +13,7 @@ def get_transactions_collection():
         from embeddings import chroma_client
 
         _transactions_collection = (
-            chroma_client.client.get_or_create_collection(
+            chroma_client.get_client().get_or_create_collection(
                 name="transactions"
             )
         )
@@ -28,7 +28,7 @@ def get_compliance_collection():
         from embeddings import chroma_client
 
         _compliance_collection = (
-            chroma_client.client.get_or_create_collection(
+            chroma_client.get_client().get_or_create_collection(
                 name="compliance_docs"
             )
         )

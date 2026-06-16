@@ -107,14 +107,14 @@ export default function LiveEventFeed({ refreshTrigger }: LiveEventFeedProps) {
   }, [refreshTrigger]);
 
   return (
-    <div className="flex flex-col h-full rounded-xl bg-white/[0.03] border border-white/8 overflow-hidden">
+    <div className="flex flex-col h-full rounded-xl bg-white border border-gray-200 overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/6 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
         <div className="flex items-center gap-2">
-          <div className={`w-1.5 h-1.5 rounded-full transition-colors ${error ? "bg-rose-400" : "bg-emerald-400 animate-pulse"}`} />
-          <span className="text-xs font-semibold text-white/70">Live Events</span>
+          <div className={`w-1.5 h-1.5 rounded-full transition-colors ${error ? "bg-red-500" : "bg-green-500 animate-pulse"}`} />
+          <span className="text-xs font-semibold text-gray-800">Live Events</span>
         </div>
-        <span className="text-[10px] text-white/25 font-mono">
+        <span className="text-[10px] text-gray-400 font-mono">
           {lastRefreshed.toLocaleTimeString()}
         </span>
       </div>
@@ -141,23 +141,23 @@ export default function LiveEventFeed({ refreshTrigger }: LiveEventFeedProps) {
         ) : events.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-8 text-center px-4">
             <span className="text-2xl mb-2">📭</span>
-            <p className="text-xs text-white/30">No events yet. Start the webhook simulator.</p>
+            <p className="text-xs text-gray-500">No events yet. Start the webhook simulator.</p>
           </div>
         ) : (
-          <ul className={`divide-y divide-white/5 transition-opacity duration-300 ${pulsing ? "opacity-60" : "opacity-100"}`}>
+          <ul className={`divide-y divide-gray-100 transition-opacity duration-300 ${pulsing ? "opacity-60" : "opacity-100"}`}>
             {events.slice(0, 50).map((event) => (
-              <li key={event.id} className="px-4 py-2.5 hover:bg-white/[0.02] transition-colors">
+              <li key={event.id} className="px-4 py-2.5 hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <EventTypeBadge type={event.event_type} />
-                  <span className="text-[10px] text-white/30 font-mono shrink-0">
+                  <span className="text-[10px] text-gray-400 font-mono shrink-0">
                     {formatTime(event.created_at)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-white/60 font-medium truncate max-w-[120px]">
+                  <span className="text-gray-600 font-medium truncate max-w-[120px]">
                     {event.merchant ?? "—"}
                   </span>
-                  <span className="text-white font-bold shrink-0">
+                  <span className="text-black font-bold shrink-0">
                     ${event.amount.toFixed(2)}
                   </span>
                 </div>
@@ -168,9 +168,9 @@ export default function LiveEventFeed({ refreshTrigger }: LiveEventFeedProps) {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-white/6 shrink-0 flex items-center justify-between">
-        <span className="text-[10px] text-white/25">{events.length} total events</span>
-        <span className="text-[10px] text-white/25">Polling every 5s</span>
+      <div className="px-4 py-2 border-t border-gray-200 shrink-0 flex items-center justify-between bg-gray-50">
+        <span className="text-[10px] text-gray-500">{events.length} total events</span>
+        <span className="text-[10px] text-gray-500">Polling every 5s</span>
       </div>
     </div>
   );

@@ -269,22 +269,22 @@ export default function PaymentPanel({ onPaymentSuccess }: PaymentPanelProps) {
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="rounded-xl bg-white/[0.03] border border-white/8 overflow-hidden">
+    <div className="rounded-xl bg-white border border-gray-200 overflow-hidden shadow-sm">
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/6">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center gap-2">
           {/* Razorpay-blue icon */}
-          <div className="w-5 h-5 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-[10px]">
+          <div className="w-5 h-5 rounded-md bg-black text-white flex items-center justify-center text-[10px]">
             ₹
           </div>
-          <span className="text-xs font-semibold text-white/70">Payment Panel</span>
-          <span className="px-1.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-semibold uppercase tracking-wider">
+          <span className="text-xs font-semibold text-gray-800">Payment Panel</span>
+          <span className="px-1.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-600 text-[9px] font-semibold uppercase tracking-wider">
             Razorpay Sandbox
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-          <span className="text-[10px] text-white/30">Test Mode</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+          <span className="text-[10px] text-gray-500">Test Mode</span>
         </div>
       </div>
 
@@ -297,12 +297,12 @@ export default function PaymentPanel({ onPaymentSuccess }: PaymentPanelProps) {
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="payment-amount"
-              className="text-[10px] font-semibold uppercase tracking-wider text-white/40"
+              className="text-[10px] font-semibold uppercase tracking-wider text-gray-500"
             >
               Amount (INR ₹)
             </label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-white/30 text-xs pointer-events-none">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 text-xs pointer-events-none">
                 ₹
               </span>
               <input
@@ -313,7 +313,7 @@ export default function PaymentPanel({ onPaymentSuccess }: PaymentPanelProps) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="500"
-                className="w-full pl-7 pr-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:outline-none focus:border-violet-500/50 text-xs text-white placeholder-white/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full pl-7 pr-3 py-2 rounded-lg bg-white border border-gray-300 focus:outline-none focus:border-black text-xs text-black placeholder-gray-400 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
             {!isAmountValid && amount !== "" && (
@@ -325,7 +325,7 @@ export default function PaymentPanel({ onPaymentSuccess }: PaymentPanelProps) {
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="payment-customer-id"
-              className="text-[10px] font-semibold uppercase tracking-wider text-white/40"
+              className="text-[10px] font-semibold uppercase tracking-wider text-gray-500"
             >
               Customer ID
             </label>
@@ -335,7 +335,7 @@ export default function PaymentPanel({ onPaymentSuccess }: PaymentPanelProps) {
               value={customerId}
               onChange={(e) => setCustomerId(e.target.value)}
               placeholder="cust_demo_001"
-              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:outline-none focus:border-violet-500/50 text-xs text-white placeholder-white/20 transition-all"
+              className="w-full px-3 py-2 rounded-lg bg-white border border-gray-300 focus:outline-none focus:border-black text-xs text-black placeholder-gray-400 transition-all"
             />
           </div>
         </div>
@@ -354,7 +354,7 @@ export default function PaymentPanel({ onPaymentSuccess }: PaymentPanelProps) {
 
           {/* Simulation row */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
               Simulate Payment
             </span>
             <div className="grid grid-cols-3 gap-2">
@@ -407,9 +407,9 @@ export default function PaymentPanel({ onPaymentSuccess }: PaymentPanelProps) {
 
           {/* Divider */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-white/6" />
-            <span className="text-[10px] text-white/25 font-medium">or</span>
-            <div className="flex-1 h-px bg-white/6" />
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-[10px] text-gray-400 font-medium">or</span>
+            <div className="flex-1 h-px bg-gray-200" />
           </div>
 
           {/* Razorpay Checkout button */}
@@ -418,9 +418,7 @@ export default function PaymentPanel({ onPaymentSuccess }: PaymentPanelProps) {
             onClick={handleRazorpayPayment}
             disabled={!isIdle || !isAmountValid}
             className="relative w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl font-semibold text-sm transition-all
-              bg-gradient-to-r from-blue-600 via-blue-500 to-violet-600
-              hover:from-blue-500 hover:via-blue-400 hover:to-violet-500
-              shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35
+              bg-black hover:bg-gray-800
               hover:scale-[1.01] active:scale-[0.99]
               disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none
               text-white"
@@ -452,11 +450,11 @@ export default function PaymentPanel({ onPaymentSuccess }: PaymentPanelProps) {
         </div>
 
         {/* ── Test card hint ───────────────────────────────────────────────── */}
-        <div className="rounded-lg bg-white/[0.02] border border-white/5 px-3 py-2 flex flex-col gap-0.5">
-          <span className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">
+        <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 flex flex-col gap-0.5 mt-2">
+          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
             Test Card
           </span>
-          <span className="text-[11px] text-white/50 font-mono">
+          <span className="text-[11px] text-gray-500 font-mono">
             4111 1111 1111 1111 &nbsp;·&nbsp; Any future date &nbsp;·&nbsp; Any CVV
           </span>
         </div>
@@ -464,11 +462,11 @@ export default function PaymentPanel({ onPaymentSuccess }: PaymentPanelProps) {
       </div>
 
       {/* ── Footer ──────────────────────────────────────────────────────────── */}
-      <div className="px-4 py-2 border-t border-white/6 flex items-center justify-between">
-        <span className="text-[10px] text-white/25">
+      <div className="px-4 py-2 border-t border-gray-200 flex items-center justify-between bg-gray-50">
+        <span className="text-[10px] text-gray-500">
           Simulate → DB → Fraud Detection → ChromaDB → RAG
         </span>
-        <span className="text-[10px] text-white/20">Sandbox only</span>
+        <span className="text-[10px] text-gray-400">Sandbox only</span>
       </div>
     </div>
   );
