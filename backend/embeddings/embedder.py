@@ -1,30 +1,46 @@
 import os
-from typing import List, Any
-from sentence_transformers import SentenceTransformer
+from typing import List, Any, Union
+from dotenv import load_dotenv
 
-# Singleton placeholder for the model
-_model = None
+load_dotenv()
 
-def get_model() -> SentenceTransformer:
-    """
-    Lazy loads the sentence-transformers model all-MiniLM-L6-v2.
-    """
-    global _model
-    if _model is None:
-        model_name = "all-MiniLM-L6-v2"
-        print(f"Loading SentenceTransformer model '{model_name}'...")
-        _model = SentenceTransformer(model_name)
-        print("SentenceTransformer model loaded successfully.")
-    return _model
+# Lazy loaded provider singleton
+_provider = None
 
-def get_embedding(text: str) -> List[float]:
+def get_provider():
     """
-    Generates a 384-dimensional list representing the dense vector of the input text.
+    Returns the active embedding provider singleton based on EMBEDDING_PROVIDER.
     """
-    model = get_model()
-    # model.encode returns a numpy array, we convert to a python list
-    embedding_vector = model.encode(text)
-    return embedding_vector.tolist()
+    global _provider
+    if _provider is None:
+        provider_type = os.getenv("EMBEDDING_PROVIDER", "gemini").lower()
+        if provider_type == "gemini":
+            from embeddings.gemini_provider import GeminiEmbeddingProvider
+            print("Initializing Gemini Embedding Provider...")
+            _provider = GeminiEmbeddingProvider()
+        else:
+            from embeddings.sentence_provider import SentenceTransformerProvider
+            print("Initializing SentenceTransformer Embedding Provider...")
+            _provider = SentenceTransformerProvider()
+    return _provider
+
+def get_embedding(text: Union[str, List[str]]) -> Union[List[float], List[List[float]]]:
+    """
+    Generates dense vector embedding(s) for the input text(s).
+    """
+    return get_provider().get_embedding(text)
+
+def get_dimension() -> int:
+    """
+    Returns the vector dimension of the active embedding provider.
+    """
+    return get_provider().get_dimension()
+
+def provider_name() -> str:
+    """
+    Returns the name of the active embedding provider.
+    """
+    return get_provider().provider_name()
 
 def generate_summary(transaction: Any) -> str:
     """
