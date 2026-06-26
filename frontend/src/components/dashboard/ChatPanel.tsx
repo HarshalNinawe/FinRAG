@@ -54,13 +54,21 @@ export default function ChatPanel() {
         };
         setMessages((prev) => [...prev, assistantMsg]);
       } catch (err) {
-        // Show the real backend error message rather than a generic one
-        const errorContent =
-          err instanceof ApiError
-            ? `${err.message}${err.status ? ` (HTTP ${err.status})` : ""}`
-            : err instanceof Error
-              ? err.message
-              : "Something went wrong. Please check your connection and try again.";
+        // Specific handling for Gemini quota (429)
+        let errorContent: string;
+        let isQuota = false;
+
+        if (err instanceof ApiError && err.status === 429) {
+          isQuota = true;
+          errorContent =
+            "Gemini API rate limit reached. The retrieval pipeline is healthy — please wait 30–60 seconds and try again.";
+        } else if (err instanceof ApiError) {
+          errorContent = `${err.message}${err.status ? ` (HTTP ${err.status})` : ""}`;
+        } else if (err instanceof Error) {
+          errorContent = err.message;
+        } else {
+          errorContent = "Something went wrong. Please check your connection and try again.";
+        }
 
         const errorMsg: Message = {
           id: uuidv4(),
@@ -68,6 +76,8 @@ export default function ChatPanel() {
           content: errorContent,
           timestamp: new Date(),
           isError: true,
+          isQuota,
+          retryText: isQuota ? text : undefined,
         };
         setMessages((prev) => [...prev, errorMsg]);
       } finally {
@@ -124,7 +134,11 @@ export default function ChatPanel() {
         ) : (
           <div className="flex flex-col gap-1">
             {messages.map((msg) => (
-              <ChatMessage key={msg.id} message={msg} />
+              <ChatMessage
+                key={msg.id}
+                message={msg}
+                onRetry={msg.retryText ? () => handleSend(msg.retryText!) : undefined}
+              />
             ))}
             {isLoading && <TypingIndicator />}
             <div ref={bottomRef} className="h-1" />

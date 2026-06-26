@@ -1,5 +1,8 @@
 import os
+import time
 import google.generativeai as genai
+from fastapi import HTTPException
+from google.api_core.exceptions import ResourceExhausted
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,23 +25,31 @@ def get_model():
 
     return _model
 
-from google.api_core.exceptions import ResourceExhausted
-
 def generate_answer(prompt: str) -> str:
-
+    """
+    Generate an answer using the Gemini LLM.
+    Raises HTTPException 429 when the API quota is exceeded.
+    Returns LLM answer string on success.
+    """
     try:
         response = get_model().generate_content(prompt)
         return response.text
 
     except ResourceExhausted:
-        return """
-Gemini API quota exceeded.
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "Gemini API rate limit reached. "
+                "The retrieval pipeline completed successfully — "
+                "please wait a moment and try again."
+            )
+        )
 
-The retrieval pipeline completed successfully,
-but answer generation is temporarily unavailable.
-
-Please try again later.
-"""
+    except HTTPException:
+        raise
 
     except Exception as e:
-        return f"LLM Error: {str(e)}"
+        raise HTTPException(
+            status_code=500,
+            detail=f"LLM generation failed: {str(e)}"
+        )

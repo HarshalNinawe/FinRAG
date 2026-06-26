@@ -10,6 +10,10 @@ export interface Message {
   timestamp: Date;
   /** True when the message represents an API error */
   isError?: boolean;
+  /** True when the error is specifically a quota/rate-limit (HTTP 429) */
+  isQuota?: boolean;
+  /** The original user query to retry on quota errors */
+  retryText?: string;
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────
