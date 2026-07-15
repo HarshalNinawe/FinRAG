@@ -54,6 +54,7 @@ function formatTime(dateStr: string) {
   }
 }
 
+
 export default function FraudAlerts({ refreshTrigger }: FraudAlertsProps) {
   const [alerts, setAlerts] = useState<FraudAlert[]>([]);
   const [loading, setLoading] = useState(true);

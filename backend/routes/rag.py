@@ -15,3 +15,4 @@ class RAGRequest(BaseModel):
 def rag_search(request: RAGRequest):
 
    return ask_rag(request.query)
+   
